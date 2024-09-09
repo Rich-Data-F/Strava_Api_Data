@@ -1,0 +1,10 @@
+#swagger-client==1.0.0
+pandas
+numpy
+requests
+python-dotenv
+cryptography
+streamlit
+matplotlib
+seaborn
+typing
