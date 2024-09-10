@@ -32,11 +32,9 @@ def create_activity_plots(filtered_df, user_firstname, user_lastname):
         row, col = divmod(i + 1, 2)
         sport_df = filtered_df[filtered_df['sport_type'] == sport]
         sns.scatterplot(data=sport_df, x='distance', y='moving_time', ax=axs[row, col])
-        
         if not user_activities.empty:
             user_sport_activities = user_activities[user_activities['sport_type'] == sport]
             axs[row, col].scatter(user_sport_activities['distance'], user_sport_activities['moving_time'], color='red', marker='*', s=100, label='Your activities')
-        
         axs[row, col].set_title(f'{sport} Activities')
         axs[row, col].set_xlabel('Distance (km)')
         axs[row, col].set_ylabel('Moving Time (hours)')

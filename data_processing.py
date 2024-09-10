@@ -8,7 +8,7 @@ def process_activities(activities: List[Dict], club_id: int, club_name: str) -> 
     if not activities:
         return pd.DataFrame()
     df = pd.DataFrame(activities)
-    df['distance'] = round(df['distance'] / 1000, 2)  # Convert to kilometers rounded to 2 decimals
+    df['distance'] = round(df['distance'] / 1000, 1)  # Convert to kilometers rounded to 1 decimal
     df['moving_time'] = round(df['moving_time'] / 3600, 2)  # Convert to hours rounded to 2 decimals
     df['club_id'] = club_id
     df['club_name'] = club_name

@@ -1,4 +1,6 @@
+import time
 import pandas as pd
+import numpy as np
 import datetime as dt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -8,6 +10,7 @@ from strava_api import *
 from data_processing import *
 from visualization import *
 import streamlit as st
+from streamlit import components
 import requests
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -22,6 +25,20 @@ cipher_suite = Fernet(encryption_key)
 CLIENT_SECRET = cipher_suite.decrypt(os.getenv("STRAVA_CLIENT_SECRET").encode()).decode()
 
 # Add this function to check the last fetch time
+
+def powered_by_strava_stream():
+    pbs= 'powered by Strava'
+    for word in pbs.split(" "):
+        yield word + " "
+        time.sleep(0.5)
+
+def display_strava_disconnect_button():
+    with st.sidebar:
+#        st.write("Click the button below to remove Strava authorization")
+        if st.button('De-Authorize Strava Access'):
+            headers = {'Authorization': f'Bearer {access_token}'}
+            requests.post(url='https://www.strava.com/oauth/deauthorize',headers = headers, timeout=15)
+
 def save_last_selected_club(club_name):
     with open('last_selected_club.json', 'w') as f:
         json.dump({'last_club': club_name}, f)
@@ -68,10 +85,11 @@ def display_athlete_stats():
     st.subheader("Your Activity Stats")
     stats_df = pd.DataFrame({
         'Metric': ['Total Distance (km)', 'Total Elevation Gain (m)', 'Total Activities'],
-        'All Time': [stats['all_ride_totals']['distance']/1000, stats['all_ride_totals']['elevation_gain'], stats['all_ride_totals']['count']],
-        'Last 4 Weeks': [stats['recent_ride_totals']['distance']/1000, stats['recent_ride_totals']['elevation_gain'], stats['recent_ride_totals']['count']]
+        'All Time': [int(stats['all_ride_totals']['distance']/1000), int(stats['all_ride_totals']['elevation_gain']), int(stats['all_ride_totals']['count'])],
+        'Last 4 Weeks': [int(stats['recent_ride_totals']['distance']/1000), int(stats['recent_ride_totals']['elevation_gain']), int(stats['recent_ride_totals']['count'])]
     })
-    st.table(stats_df)
+    st.dataframe(stats_df, hide_index=True)
+#    st.data_editor(stats_df, use_container_width=True, hide_index=True, column_order='name', num_rows="dynamic")
 
 def display_friend_activities():
     st.subheader("Your Followed Friends Stats")
@@ -84,13 +102,14 @@ def display_friend_activities():
         st.error("Failed to retrieve friend activities.")
 
 def display_clubs():
-    st.subheader("Clubs you belong to")
-    clubs = get_athlete_clubs(st.session_state.access_token)
-    if clubs:
-        st.session_state.clubs_df = pd.DataFrame(clubs)
-        st.dataframe(st.session_state.clubs_df[['id', 'name', 'sport_type']])
-    else:
-        st.warning("No clubs found or unable to retrieve them.")
+    with st.sidebar:
+        st.subheader("Clubs you belong to")
+        clubs = get_athlete_clubs(st.session_state.access_token)
+        if clubs:
+            st.session_state.clubs_df = pd.DataFrame(clubs)
+            st.dataframe(st.session_state.clubs_df[['id', 'name', 'sport_type']], hide_index=True)
+        else:
+            st.warning("No clubs found or unable to retrieve them.")
 
 def display_club_details(selected_club):
     club_id = st.session_state.clubs_df[st.session_state.clubs_df['name'] == selected_club]['id'].values[0]
@@ -98,7 +117,7 @@ def display_club_details(selected_club):
     if members:
         st.subheader(f"Members of {selected_club}")
         members_df = pd.DataFrame(members)
-        st.dataframe(members_df[['firstname', 'lastname', 'id']])
+        st.dataframe(members_df[['firstname', 'lastname', 'id']], hide_index=True)
     else:
         st.warning("Unable to retrieve club members.")
 
@@ -107,8 +126,11 @@ def display_club_stats(selected_club, all_activities_df):
     club_activities = all_activities_df[all_activities_df['club_name'] == selected_club]
     if not club_activities.empty:
         st.write(f"Total activities: {len(club_activities)}")
-        st.write(f"Total distance: {club_activities['distance'].sum():.2f} km")
-        st.write(f"Total moving time: {club_activities['moving_time'].sum():.2f} hours")
+        st.write(f"Total distance: {int(club_activities['distance'].sum())} km")
+        st.write(f"Total moving time: {int(club_activities['moving_time'].sum())} hours")
+        unique_contributors = club_activities[['firstname', 'lastname']].drop_duplicates()
+        num_unique_contributors = len(unique_contributors)
+        st.write(f"performed by: {num_unique_contributors} different members")
     else:
         st.write("No activities found for this club.")
 
@@ -127,26 +149,27 @@ def display_club_activities(selected_club, clubs_df):
         return
     st.write(f"Showing details for {selected_club}. Total activities: {len(df)}")
     # Get min and max dates
-    min_date = df['upload_date'].min().date()
-    max_date = df['upload_date'].max().date()
+    with st.sidebar:
+        min_date = df['upload_date'].min().date()
+        max_date = df['upload_date'].max().date()
     # Ensure min_date and max_date are different
-    if min_date == max_date:
-        min_date = min_date - timedelta(days=1)
-        max_date = max_date + timedelta(days=1)
-    # Create the slider
-    # Calculate a default range (e.g., last 30 days)
-    default_end = max_date
-    default_start = max(min_date, default_end - timedelta(days=30))
-    date_range = st.slider(
-        "Select date range",
-        min_value=min_date,
-        max_value=max_date,
-        value=(default_start, default_end),
-        format="YYYY-MM-DD"
-    )
-    # Filter data based on selected date range
-    mask = (df['upload_date'].dt.date >= date_range[0]) & (df['upload_date'].dt.date <= date_range[1])
-    filtered_df = df.loc[mask]
+        if min_date == max_date:
+            min_date = min_date - timedelta(days=1)
+            max_date = max_date + timedelta(days=1)
+        # Create the slider
+        # Calculate a default range (e.g., last 30 days)
+        default_end = max_date
+        default_start = max(min_date, default_end - timedelta(days=30))
+        date_range = st.slider(
+            "Select date range",
+            min_value=min_date,
+            max_value=max_date,
+            value=(default_start, default_end),
+            format="YYYY-MM-DD"
+        )
+        # Filter data based on selected date range
+        mask = (df['upload_date'].dt.date >= date_range[0]) & (df['upload_date'].dt.date <= date_range[1])
+        filtered_df = df.loc[mask]
     # Get user information
     #    user_firstname = st.text_input("Enter your first name")
     #    user_lastname_initial = st.text_input("Enter your last name initial")'''
@@ -155,13 +178,15 @@ def display_club_activities(selected_club, clubs_df):
     if athlete_firstname and athlete_lastname:
         fig = create_activity_plots(filtered_df, athlete_firstname, athlete_lastname)  # Using first letter of lastname
         st.pyplot(fig)
-        # Display statistics and palmares
         display_summary_statistics(filtered_df)
     else:
         st.error("Failed to retrieve athlete information.")
 
 def main():
-    st.title('Strava Data Analysis')
+    st.title('Metrics on my and clubs activities')
+    st.write_stream(powered_by_strava_stream)
+    st.logo(image='media/api_logo_pwrdBy_strava_horiz_gray.png',link='https://strava.com', icon_image='media/api_logo_pwrdBy_strava_stack_gray.png')
+    st.image('media/3_Men_photos.jpg', caption=None)
     if 'access_token' not in st.session_state:
         st.session_state.access_token = None
     if 'selected_club' not in st.session_state:
@@ -172,12 +197,13 @@ def main():
         if 'access_token' in token_response:
             st.session_state.access_token = token_response['access_token']
             st.success("Successfully authorized!")
+            display_strava_disconnect_button()
         else:
             st.error(f"Failed to obtain access token. Error: {token_response.get('error', 'Unknown error')}")
         del st.query_params['code']
     if st.session_state.access_token:
         display_athlete_stats()
-        display_friend_activities()
+#        display_friend_activities()
         display_clubs()
          # Get athlete info
         get_athlete_info(st.session_state.access_token) # get_athlete_info(st.session_state.access_token)
@@ -185,43 +211,45 @@ def main():
         #all_activities_df = load_existing_activities()
         all_activities_df = pd.read_csv('data/all_club_activities.csv', parse_dates=['upload_date'])
         
+        with st.sidebar:
         # Add a button to trigger fetching
-        if st.button('Fetch New Activities'):
+            if st.button('Fetch New Activities'):
         # Fetch and consolidate activities for all clubs
-            all_activities_df = pd.DataFrame()
-            clubs = get_athlete_clubs(st.session_state.access_token)
-            if clubs:
-                for club in clubs:
-                    club_id = club['id']
-                    club_name = club['name']
-                    # Check if club has more than 500 members
-                    members = get_club_members(st.session_state.access_token, club_id)
-                    if len(members) > 300:
-                        st.warning(f"Skipping {club_name} as it has more than 300 members.")
-                        continue
-                    # Check if last fetch was more than 24 hours ago
-                    last_fetch_time = get_last_fetch_time(club_id)
-    #                if datetime.now() - last_fetch_time < timedelta(hours=24):
-    #                   st.info(f"Skipping {club_name} as it was fetched less than 24 hours ago.")
-    #                    continue
-                    new_activities_json = get_club_activities(st.session_state.access_token, club_id, club_name)
-                    if new_activities_json:
-                        new_activities_df = process_activities(new_activities_json, club_id, club_name)
-                        all_activities_df = pd.concat([all_activities_df, new_activities_df])
-                        # Update the register after each successful fetch
-                        all_activities_df = update_activities_register(all_activities_df)
-                        update_fetch_log(club_id)  # Update the fetch log
-                        st.success(f"Retrieved activities for {club_name}")
-                    else:
-                        st.warning(f"Failed to retrieve activities for {club_name}. Stopping further fetches.")
-                        break  # Stop fetching on first error (e.g., 503)
-                st.success(f"Total unique activities: {len(all_activities_df)}")
+                all_activities_df = pd.DataFrame()
+                clubs = get_athlete_clubs(st.session_state.access_token)
+                if clubs:
+                    for club in clubs:
+                        club_id = club['id']
+                        club_name = club['name']
+                        # Check if club has more than 500 members
+                        members = get_club_members(st.session_state.access_token, club_id)
+                        if len(members) > 300:
+                            st.warning(f"Skipping {club_name} as it has more than 300 members.")
+                            continue
+                        # Check if last fetch was more than 24 hours ago
+                        last_fetch_time = get_last_fetch_time(club_id)
+                        if datetime.now() - last_fetch_time < timedelta(hours=24):
+                            st.info(f"Skipping {club_name} as it was fetched less than 24 hours ago.")
+                            continue
+                        new_activities_json = get_club_activities(st.session_state.access_token, club_id, club_name)
+                        if new_activities_json:
+                            new_activities_df = process_activities(new_activities_json, club_id, club_name)
+                            all_activities_df = pd.concat([all_activities_df, new_activities_df])
+                            # Update the register after each successful fetch
+                            all_activities_df = update_activities_register(all_activities_df)
+                            update_fetch_log(club_id)  # Update the fetch log
+                            st.success(f"Retrieved activities for {club_name}")
+                        else:
+                            st.warning(f"Failed to retrieve activities for {club_name}. Stopping further fetches.")
+                            break  # Stop fetching on first error (e.g., 503)
+                    st.success(f"Total unique activities: {len(all_activities_df)}")
 
         # Create a dropdown for club selection
         club_names = st.session_state.clubs_df['name'].tolist()
         default_index = club_names.index(st.session_state.selected_club) if st.session_state.selected_club in club_names else 0
         # selected_club = st.selectbox("Select a club for detailed view", club_names, index=default_index)
-        selected_club = st.selectbox("Select a club for detailed view", st.session_state.clubs_df['name'])
+        with st.sidebar:
+            selected_club = st.selectbox("Select a club for detailed view", st.session_state.clubs_df['name'])
         # club_names, index=default_index) 
         if selected_club:
             st.session_state.selected_club = selected_club
@@ -230,16 +258,17 @@ def main():
             display_club_activities(selected_club, st.session_state.clubs_df)
             # Display stats for the selected club using existing data
             display_club_stats(selected_club, all_activities_df)
-                    # Button to display palmares
-        if st.button('Display Palmares'):
-            club_activities = all_activities_df[all_activities_df['club_name'] == selected_club]
-            display_palmares(club_activities)
-#            display_palmares(filtered_df)
+        # Button to display palmares
+        with st.sidebar:
+            if st.button('Display Palmares'):
+                club_activities = all_activities_df[all_activities_df['club_name'] == selected_club]
+                display_palmares(club_activities)
+    #            display_palmares(filtered_df)
     else:
         st.write("Click the button below to authorize this app to access your Strava data.")
         if st.button('Authorize Strava Access'):
             auth_url = create_strava_auth_url(CLIENT_ID, REDIRECT_URI)
-            st.markdown(f"[Click here to authorize]({auth_url})", unsafe_allow_html=True)
-
+            st.link_button("Authorize", auth_url, use_container_width=False, type="primary")
+            st.image('media/btn_strava_connectwith_orange.png', caption = None)
 if __name__ == "__main__":
     main()
