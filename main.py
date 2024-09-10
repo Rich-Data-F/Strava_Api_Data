@@ -19,7 +19,7 @@ import json
 # Load environment variables and decrypt secrets
 load_dotenv()
 CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
-REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", "http://localhost:8501")
+REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", 'https://stravaapidata-lfnmjwyc5mtcusf5yuxynl.streamlit.app/')
 encryption_key = os.getenv("ENCRYPTION_KEY").encode()
 cipher_suite = Fernet(encryption_key)
 CLIENT_SECRET = cipher_suite.decrypt(os.getenv("STRAVA_CLIENT_SECRET").encode()).decode()
