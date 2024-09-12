@@ -182,6 +182,35 @@ def display_club_activities(selected_club, clubs_df):
     else:
         st.error("Failed to retrieve athlete information.")
 
+def get_latest_date(filename):
+    """
+    Finds the latest date from a json.file, and returns it in 'ddd mmm yyyy' format.
+    :param filename: String, the name of the JSON file to read
+    :return: String, the latest date in 'ddd mmm yyyy' format
+    """
+    try:
+        # Read the JSON file
+        with open(f'/data/{filename}', 'r') as file:
+            data = json.load(file)
+        # Extract all datetime strings
+        datetime_strings = list(data.values())
+        # Convert strings to datetime objects
+        datetime_objects = [datetime.fromisoformat(dt_string) for dt_string in datetime_strings]
+        # Find the maximum (latest) datetime
+        latest_datetime = max(datetime_objects)
+        # Convert the latest datetime to the required format
+        formatted_date = latest_datetime.strftime("%a %b %d %Y")
+        return formatted_date
+
+    except FileNotFoundError:
+        return f"Error: File '{filename}' not found."
+    except json.JSONDecodeError:
+        return f"Error: '{filename}' is not a valid JSON file."
+    except ValueError as e:
+        return f"Error: {str(e)}"
+    except Exception as e:
+        return f"An unexpected error occurred: {str(e)}"
+
 def main():
     st.title('Metrics on my and clubs activities')
     st.write_stream(powered_by_strava_stream)
@@ -213,6 +242,7 @@ def main():
         
         with st.sidebar:
         # Add a button to trigger fetching
+            print(f"Data last refreshed on: {get_latest_date(fetch_log.json)}")
             if st.button('Fetch New Activities'):
         # Fetch and consolidate activities for all clubs
                 all_activities_df = pd.DataFrame()
@@ -228,8 +258,8 @@ def main():
                             continue
                         # Check if last fetch was more than 24 hours ago
                         last_fetch_time = get_last_fetch_time(club_id)
-                        if datetime.now() - last_fetch_time < timedelta(hours=24):
-                            st.info(f"Skipping {club_name} as it was fetched less than 24 hours ago.")
+                        if datetime.now() - last_fetch_time < timedelta(hours=6):
+                            st.info(f"Skipping {club_name} as it was fetched less than 6 hours ago.")
                             continue
                         new_activities_json = get_club_activities(st.session_state.access_token, club_id, club_name)
                         if new_activities_json:
