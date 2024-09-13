@@ -1,6 +1,8 @@
 import time
 import pandas as pd
 import numpy as np
+if not hasattr(np, 'bool8'):
+    np.bool8 = np.bool_
 import datetime as dt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -11,6 +13,12 @@ from data_processing import *
 from visualization import *
 import streamlit as st
 from streamlit import components
+from bokeh.models import ColumnDataSource, HoverTool, Legend
+from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.palettes import Spectral10, Turbo256
+from bokeh.models import Legend, LegendItem
+import colorcet as cc
 import requests
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -19,8 +27,8 @@ import json
 # Load environment variables and decrypt secrets
 load_dotenv()
 CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
-REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", 'https://stravaapidata-lfnmjwyc5mtcusf5yuxynl.streamlit.app/')
-encryption_key = os.getenv("ENCRYPTION_KEY").encode()
+REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", 'https://stravaapidata-lfnmjwyc5mtcusf5yuxynl.streamlit')
+#'http://localhost:8501') #encryption_key = os.getenv("ENCRYPTION_KEY").encode()
 cipher_suite = Fernet(encryption_key)
 CLIENT_SECRET = cipher_suite.decrypt(os.getenv("STRAVA_CLIENT_SECRET").encode()).decode()
 
@@ -82,7 +90,7 @@ def update_fetch_log(club_id):
 
 def display_athlete_stats():
     stats = get_athlete_stats(st.session_state.access_token)
-    st.subheader("Your Activity Stats")
+    st.subheader("My Activity Stats")
     stats_df = pd.DataFrame({
         'Metric': ['Total Distance (km)', 'Total Elevation Gain (m)', 'Total Activities'],
         'All Time': [int(stats['all_ride_totals']['distance']/1000), int(stats['all_ride_totals']['elevation_gain']), int(stats['all_ride_totals']['count'])],
@@ -110,16 +118,6 @@ def display_clubs():
             st.dataframe(st.session_state.clubs_df[['id', 'name', 'sport_type']], hide_index=True)
         else:
             st.warning("No clubs found or unable to retrieve them.")
-
-def display_club_details(selected_club):
-    club_id = st.session_state.clubs_df[st.session_state.clubs_df['name'] == selected_club]['id'].values[0]
-    members = get_club_members(st.session_state.access_token, club_id)
-    if members:
-        st.subheader(f"Members of {selected_club}")
-        members_df = pd.DataFrame(members)
-        st.dataframe(members_df[['firstname', 'lastname', 'id']], hide_index=True)
-    else:
-        st.warning("Unable to retrieve club members.")
 
 def display_club_stats(selected_club, all_activities_df):
     st.subheader(f"Stats for {selected_club}")
@@ -182,7 +180,7 @@ def display_club_activities(selected_club, clubs_df):
     else:
         st.error("Failed to retrieve athlete information.")
 
-def get_latest_date(filename):
+def get_latest_fetch_date(filename):
     """
     Finds the latest date from a json.file, and returns it in 'ddd mmm yyyy' format.
     :param filename: String, the name of the JSON file to read
@@ -232,6 +230,8 @@ def main():
         del st.query_params['code']
     if st.session_state.access_token:
         display_athlete_stats()
+        st.markdown('---')
+#        display_athlete_stats_extended()
 #        display_friend_activities()
         display_clubs()
          # Get athlete info
@@ -239,10 +239,10 @@ def main():
         # Load existing activities
         #all_activities_df = load_existing_activities()
         all_activities_df = pd.read_csv('data/all_club_activities.csv', parse_dates=['upload_date'])
-        
         with st.sidebar:
         # Add a button to trigger fetching
-            print(f"Data last refreshed on: {get_latest_date(fetch_log.json)}")
+        #    last_fetch_date=get_latest_fetch_date(fetch_log)
+        #    print(f"Data last refreshed on: {last_fetch_date}")
             if st.button('Fetch New Activities'):
         # Fetch and consolidate activities for all clubs
                 all_activities_df = pd.DataFrame()

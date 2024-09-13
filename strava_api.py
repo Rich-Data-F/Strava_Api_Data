@@ -1,4 +1,5 @@
 import datetime as dt
+from datetime import datetime, timedelta
 import requests
 import streamlit as st
 from typing import Dict, Any, List, Optional
@@ -9,13 +10,13 @@ def get_athlete_info(access_token):
     athlete_url = 'https://www.strava.com/api/v3/athlete'
     response = requests.get(athlete_url, headers=headers)
     if response.status_code == 200:
-        athlete_data = response.json()
-        user_firstname = athlete_data['firstname']
-        user_lastname = athlete_data['lastname']
-        return athlete_data['firstname'], athlete_data['lastname']
+        st.session_state.athlete_data = response.json()
+        user_firstname = st.session_state.athlete_data['firstname']
+        user_lastname = st.session_state.athlete_data['lastname']
+        return st.session_state.athlete_data['firstname'], st.session_state.athlete_data['lastname']#, st.session_state.athlete_data
     else:
         st.error(f"Failed to fetch athlete info. Status code: {response.status_code}")
-        return None, None
+        return None, None, None
 
 @st.cache_data(ttl=3600)
 def create_strava_auth_url(client_id: str, redirect_uri: str) -> str:
