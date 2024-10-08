@@ -95,7 +95,7 @@ def display_club_details(selected_club):
 ]
             # Add legend to the plot
             legend = Legend(items=legend_items, location="center_right", click_policy="hide")
-            p.add_layout(legend, 'right')
+            p.add_layout(legend, 'below')
             
             # Show the plot in Streamlit
             st.bokeh_chart(p)
@@ -108,7 +108,7 @@ def display_club_details(selected_club):
         st.warning(f"No activities found for {selected_club}.")
 
 def create_activity_plots(filtered_df, user_firstname, user_lastname):
-    fig, axs = plt.subplots(2, 2, figsize=(20, 20))
+    fig, axs = plt.subplots(2, 2, figsize=(35, 35))
     plt.subplots_adjust(hspace=0.4)
     # Plot 1: All activities
     sns.scatterplot(data=filtered_df, x='distance', y='moving_time', ax=axs[0, 0])

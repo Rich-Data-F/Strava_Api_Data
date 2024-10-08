@@ -1,6 +1,5 @@
 For exploration of the Strava version 3 API and what it enables to access.
 
-
 https://developers.strava.com/docs/
 https://developers.strava.com/docs/authentication/
 
@@ -9,6 +8,8 @@ Use of requests library preferred to swagger due to difficulty in installation o
 API set up with an existing account on Strava website https://www.strava.com/settings/api with developers.strava.com set as recall domain for the authorization
 
 It may be fruitful to study 'behaviour' / functioning of the API on the Swagger playground (https://developers.strava.com/playground/#/Streams/getActivityStreams).
+
+
 
 4. **Uploads** including categories of activity as sport_type: https://developers.strava.com/docs/uploads/ Activity_type is deprecated
 

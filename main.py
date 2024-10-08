@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 if not hasattr(np, 'bool8'):
     np.bool8 = np.bool_
+import base64
 import datetime as dt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -24,16 +25,33 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 
-# Load environment variables and decrypt secrets
-load_dotenv()
-CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
-REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", 'https://stravaapidata-lfnmjwyc5mtcusf5yuxynl.streamlit')
-#'http://localhost:8501')
-encryption_key = os.getenv("ENCRYPTION_KEY").encode()
-cipher_suite = Fernet(encryption_key)
-CLIENT_SECRET = cipher_suite.decrypt(os.getenv("STRAVA_CLIENT_SECRET").encode()).decode()
+test_mode = False
 
-# Add this function to check the last fetch time
+# Load environment variables
+load_dotenv()
+
+# Get environment variables
+CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
+STRAVA_REDIRECT_URI = os.getenv("STRAVA_REDIRECT_URI", 'https://stravaapidata-lfnmjwyc5yuxynl.streamlit')
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
+if test_mode:
+    print("ENCRYPTION_KEY:", ENCRYPTION_KEY)
+# Create Fernet instance
+cipher_suite = Fernet(ENCRYPTION_KEY.encode())
+# Encrypt the client secret (for demonstration purposes)
+encrypted_secret = cipher_suite.encrypt(STRAVA_CLIENT_SECRET.encode())
+
+# Decrypt the client secret
+decrypted_secret = cipher_suite.decrypt(encrypted_secret).decode()
+
+if test_mode:
+    print("Original CLIENT_SECRET:", STRAVA_CLIENT_SECRET)
+    print("Encrypted CLIENT_SECRET:", encrypted_secret)
+    print("Decrypted CLIENT_SECRET:", decrypted_secret)
+
+# Use the decrypted secret in your application
+CLIENT_SECRET = decrypted_secret# Add this function to check the last fetch time
 
 def powered_by_strava_stream():
     pbs= 'powered by Strava'
@@ -298,7 +316,7 @@ def main():
     else:
         st.write("Click the button below to authorize this app to access your Strava data.")
         if st.button('Authorize Strava Access'):
-            auth_url = create_strava_auth_url(CLIENT_ID, REDIRECT_URI)
+            auth_url = create_strava_auth_url(CLIENT_ID, STRAVA_REDIRECT_URI)
             st.link_button("Authorize", auth_url, use_container_width=False, type="primary")
             st.image('media/btn_strava_connectwith_orange.png', caption = None)
 if __name__ == "__main__":
