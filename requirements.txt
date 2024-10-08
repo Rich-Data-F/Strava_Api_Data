@@ -1,6 +1,6 @@
 #swagger-client==1.0.0
 pandas
-numpy==1.23.5
+numpy
 requests
 python-dotenv
 cryptography
@@ -9,4 +9,4 @@ matplotlib
 seaborn
 typing
 colorcet
-bokeh==2.4.3
+bokeh
