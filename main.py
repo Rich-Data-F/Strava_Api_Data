@@ -24,6 +24,7 @@ import requests
 import matplotlib.pyplot as plt
 import seaborn as sns
 import json
+import plotly
 
 test_mode = False
 
@@ -303,7 +304,7 @@ def main():
         if selected_club:
             st.session_state.selected_club = selected_club
             save_last_selected_club(selected_club)
-            display_club_details(selected_club)
+            display_club_details_with_plotly(selected_club)
             display_club_activities(selected_club, st.session_state.clubs_df)
             # Display stats for the selected club using existing data
             display_club_stats(selected_club, all_activities_df)

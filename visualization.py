@@ -14,7 +14,95 @@ from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, HoverTool
 from bokeh.palettes import Spectral10, Turbo256
 import colorcet as cc
+import plotly.graph_objects as go
 
+
+
+def display_club_details_with_plotly(selected_club):
+    # Define sport_types at the beginning of the function
+    sport_types = {
+        "Running (Trail + Running)": ['Trail', 'Run'],
+        "Cycling (Gravel, Road, Mountain Bike, Virtual)": ['Gravel Ride', 'Ride', 'MountainBikeRide', 'VirtualRide'],
+        "Swimming": ['Swim']
+    }
+
+    # Read the CSV file
+    df = pd.read_csv('data/all_club_activities.csv')
+    
+    # Filter activities for the selected club
+    club_activities = df[df['club_name'] == selected_club]
+    
+    if not club_activities.empty:
+        st.subheader(f"Member Activities for {selected_club}")    
+        for sport_name, sport_activities in sport_types.items():
+            st.subheader(f"{sport_name} Activities")
+            
+            # Filter activities for this sport type
+            sport_df = club_activities[club_activities['sport_type'].isin(sport_activities)]
+            
+            if sport_df.empty:
+                st.write(f"No {sport_name} activities found for this club.")
+                continue
+            
+            # Aggregate data by athlete
+            athlete_stats = sport_df.groupby(['firstname', 'lastname']).agg({
+                'distance': 'sum',
+                'moving_time': 'sum',
+                'avg_speed': 'mean'
+            }).reset_index()
+            
+            # Calculate number of activities
+            activity_counts = sport_df.groupby(['firstname', 'lastname']).size().reset_index(name='activity_count')
+            athlete_stats = athlete_stats.merge(activity_counts, on=['firstname', 'lastname'])
+            
+            # Sort by number of activities and get top 50
+            top_50_athletes = athlete_stats.sort_values('activity_count', ascending=False).head(50)
+            
+            # Create a color palette for athletes
+            num_athletes = len(top_50_athletes)
+            color_palette = Turbo256[:num_athletes]
+            top_50_athletes['color'] = color_palette
+            
+            # Create the Plotly figure
+            fig = go.Figure()
+
+            # Add bubbles
+            fig.add_trace(go.Scatter(
+                x=top_50_athletes['activity_count'],
+                y=top_50_athletes['avg_speed'],
+                mode='markers',
+                marker=dict(
+                    size=top_50_athletes['moving_time'] / 3600,  # Convert to hours
+                    sizemode='area',
+                    sizeref=2.*max(top_50_athletes['moving_time']/3600)/(40.**2),
+                    sizemin=4,
+                    color=top_50_athletes.index,
+                    colorscale='Turbo',
+                    showscale=False
+                ),
+                text=top_50_athletes.apply(lambda row: f"{row['firstname']} {row['lastname']}<br>Activities: {row['activity_count']}<br>Avg Speed: {row['avg_speed']:.2f}<br>Total Distance: {row['distance']:.2f} km<br>Moving Time: {row['moving_time']/3600:.2f} hours", axis=1),
+                hoverinfo='text'
+            ))
+
+            # Customize the layout
+            fig.update_layout(
+                title=f"Top 50 {sport_name} Athletes",
+                xaxis_title="Number of Activities",
+                yaxis_title="Average Speed",
+                width=800,
+                height=600,
+                showlegend=False
+            )
+
+            # Display the Plotly figure
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Optionally, display the data table
+            if st.toggle('Show dataframe', key=f"toggle_{sport_name.replace(' ', '_')}"):
+                st.dataframe(top_50_athletes[['firstname', 'lastname', 'activity_count', 'avg_speed', 'distance', 'moving_time'
+            ]], hide_index=True)
+    else:
+        st.warning(f"No activities found for {selected_club}.")
 
 
 def display_club_details(selected_club):
@@ -106,6 +194,47 @@ def display_club_details(selected_club):
             ]], hide_index=True)
     else:
         st.warning(f"No activities found for {selected_club}.")
+
+def create_bubble_chart(df, sport_name):
+    # Aggregate data by athlete
+    athlete_stats = df.groupby(['firstname', 'lastname']).agg({
+        'distance': 'sum',
+        'moving_time': 'sum',
+        'avg_speed': 'mean',
+        'activity_count': 'sum'
+    }).reset_index()
+    # Sort by number of activities and get top 50
+    top_50_athletes = athlete_stats.sort_values('activity_count', ascending=False).head(50)
+    # Create the Plotly figure
+    fig = go.Figure()
+    # Add bubbles
+    fig.add_trace(go.Scatter(
+        x=top_50_athletes['activity_count'],
+        y=top_50_athletes['avg_speed'],
+        mode='markers',
+        marker=dict(
+            size=top_50_athletes['moving_time'] / 3600,  # Convert to hours
+            sizemode='area',
+            sizeref=2.*max(top_50_athletes['moving_time']/3600)/(40.**2),
+            sizemin=4,
+            color=top_50_athletes.index,
+            colorscale='Turbo',
+            showscale=False
+        ),
+        text=top_50_athletes.apply(lambda row: f"{row['firstname']} {row['lastname']}<br>Activities: {row['activity_count']}<br>Avg Speed: {row['avg_speed']:.2f}<br>Total Distance: {row['distance']:.2f} km<br>Moving Time: {row['moving_time']/3600:.2f} hours", axis=1),
+        hoverinfo='text'
+    ))
+    # Customize the layout
+    fig.update_layout(
+        title=f"Top 50 {sport_name} Athletes",
+        xaxis_title="Number of Activities",
+        yaxis_title="Average Speed",
+        width=800,
+        height=600,
+        showlegend=False
+    )
+    return fig
+
 
 def create_activity_plots(filtered_df, user_firstname, user_lastname):
     fig, axs = plt.subplots(2, 2, figsize=(35, 35))

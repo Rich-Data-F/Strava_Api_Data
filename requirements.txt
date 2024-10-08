@@ -9,4 +9,4 @@ matplotlib
 seaborn
 typing
 colorcet
-bokeh
+plotly==5.18.0
