@@ -8,11 +8,6 @@ from typing import Tuple
 import ast
 from data_processing import *
 from strava_api import *
-from bokeh.models import ColumnDataSource, HoverTool, Legend
-from bokeh.models import Legend, LegendItem
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.palettes import Spectral10, Turbo256
 import colorcet as cc
 import plotly.graph_objects as go
 

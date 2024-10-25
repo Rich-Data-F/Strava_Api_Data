@@ -14,11 +14,11 @@ from data_processing import *
 from visualization import *
 import streamlit as st
 from streamlit import components
-from bokeh.models import ColumnDataSource, HoverTool, Legend
-from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, HoverTool
-from bokeh.palettes import Spectral10, Turbo256
-from bokeh.models import Legend, LegendItem
+#from bokeh.models import ColumnDataSource, HoverTool, Legend
+#from bokeh.plotting import figure
+#from bokeh.models import ColumnDataSource, HoverTool
+#from bokeh.palettes import Spectral10, Turbo256
+#from bokeh.models import Legend, LegendItem
 import colorcet as cc
 import requests
 import matplotlib.pyplot as plt
@@ -114,7 +114,7 @@ def display_athlete_stats():
     stats_df = pd.DataFrame({
         'Metric': ['Total Distance (km)', 'Total Elevation Gain (m)', 'Total Activities'],
         'All Time': [int(stats['all_ride_totals']['distance']/1000), int(stats['all_ride_totals']['elevation_gain']), int(stats['all_ride_totals']['count'])],
-        'Last 4 Weeks': [int(stats['recent_ride_totals']['distance']/1000), int(stats['recent_ride_totals']['elevation_gain']), int(stats['recent_ride_totals']['count'])]
+        'Last 4 Weeks': [int(stats['recent_ride_totals']['distance']/1000), int(stats['recent_ride_totals']['elevation_gain']), int(stats['recent_ride_totals']['count'])]#'last 3 months': 
     })
     st.dataframe(stats_df, hide_index=True)
 #    st.data_editor(stats_df, use_container_width=True, hide_index=True, column_order='name', num_rows="dynamic")
