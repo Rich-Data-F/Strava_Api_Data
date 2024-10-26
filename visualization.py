@@ -54,8 +54,8 @@ def display_club_details_with_plotly(selected_club):
             top_50_athletes = athlete_stats.sort_values('activity_count', ascending=False).head(50)
             
             # Create a color palette for athletes
-            num_athletes = len(top_50_athletes)
-            color_palette = Turbo256[:num_athletes]
+            num_athletes = len(top_50_athletes) 
+            color_palette = cc.glasbey_category10[:num_athletes]  # Use of a color palette from colorcet instead of Turbo256
             top_50_athletes['color'] = color_palette
             
             # Create the Plotly figure
