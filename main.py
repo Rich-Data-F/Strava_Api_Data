@@ -1,4 +1,3 @@
-import logging
 import time
 import pandas as pd
 import numpy as np
@@ -27,11 +26,6 @@ import seaborn as sns
 import json
 import plotly
 import hashlib
-import pathlib
-from pathlib import Path
-import shutil
-from bs4 import BeautifulSoup
-
 
 test_mode = False
 
@@ -54,34 +48,6 @@ encrypted_secret = cipher_suite.encrypt(STRAVA_CLIENT_SECRET.encode())
 decrypted_secret = cipher_suite.decrypt(encrypted_secret).decode()
 
 # Initialize SQLite database
-def inject_ga():
-    GA_ID="google_analytics"
-    GA_JS= """
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-57FFY9GS5T"></script> 
-    <script> 
-        window.dataLayer = window.dataLayer || []; 
-        function gtag(){dataLayer.push(arguments);} 
-        gtag('js', new Date());
-        gtag('config', 'G-57FFY9GS5T');
-        </script> 
-        """
-    # Insert the script in the head tag of the static template inside your virtual
-    index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
-    logging.info(f'editing {index_path}')
-#    index_path = Path('/path/to/your/index.html')  # Update this to your actual index path
-    bck_index = Path('Data')  # Update this to a writable location
-    soup = BeautifulSoup(index_path.read_text(), features="html.parser")
-    if not soup.find(id=GA_ID): 
-        bck_index = index_path.with_suffix('.bck')
-        if bck_index.exists():
-            shutil.copy(bck_index, index_path)  
-        else:
-            shutil.copy(index_path, bck_index)  
-        html = str(soup)
-        new_html = html.replace('<head>', '<head>\n' + GA_JS)
-        index_path.write_text(new_html)
-
 if test_mode:
     print("Original CLIENT_SECRET:", STRAVA_CLIENT_SECRET)
     print("Encrypted CLIENT_SECRET:", encrypted_secret)
@@ -276,8 +242,7 @@ def main():
             gtag('js', new Date());
             gtag('config', '{GA_TRACKING_ID}');
         </script>
-    """, unsafe_allow_html=True)
-    inject_ga()
+        """, unsafe_allow_html=True)
     st.title('Metrics on my and clubs activities')
     st.write_stream(powered_by_strava_stream)
     st.logo(image='media/api_logo_pwrdBy_strava_horiz_gray.png',link='https://strava.com', icon_image='media/api_logo_pwrdBy_strava_stack_gray.png')
