@@ -11,3 +11,4 @@ typing
 colorcet
 plotly==5.18.0
 colorcet
+bs4

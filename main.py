@@ -29,6 +29,8 @@ import hashlib
 import pathlib
 from pathlib import Path
 import shutil
+from bs4 import BeautifulSoup
+
 
 test_mode = False
 
