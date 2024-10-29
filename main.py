@@ -232,7 +232,6 @@ def get_latest_fetch_date(filename):
         return f"An unexpected error occurred: {str(e)}"
 
 def main():
-
     GA_TRACKING_ID = 'G-57FFY9GS5T'
     # Inject Google Analytics tracking code into the Streamlit app
     st.markdown(f"""
@@ -244,7 +243,6 @@ def main():
             gtag('config', '{GA_TRACKING_ID}');
         </script>
     """, unsafe_allow_html=True)
-
     st.title('Metrics on my and clubs activities')
     st.write_stream(powered_by_strava_stream)
     st.logo(image='media/api_logo_pwrdBy_strava_horiz_gray.png',link='https://strava.com', icon_image='media/api_logo_pwrdBy_strava_stack_gray.png')
