@@ -46,6 +46,8 @@ encrypted_secret = cipher_suite.encrypt(STRAVA_CLIENT_SECRET.encode())
 # Decrypt the client secret
 decrypted_secret = cipher_suite.decrypt(encrypted_secret).decode()
 
+# Initialize SQLite database
+
 if test_mode:
     print("Original CLIENT_SECRET:", STRAVA_CLIENT_SECRET)
     print("Encrypted CLIENT_SECRET:", encrypted_secret)
@@ -230,6 +232,19 @@ def get_latest_fetch_date(filename):
         return f"An unexpected error occurred: {str(e)}"
 
 def main():
+
+    GA_TRACKING_ID = 'G-57FFY9GS5T'
+    # Inject Google Analytics tracking code into the Streamlit app
+    st.markdown(f"""
+        <script async src="https://www.googletagmanager.com/gtag/js?id={GA_TRACKING_ID}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){{dataLayer.push(arguments);}}
+            gtag('js', new Date());
+            gtag('config', '{GA_TRACKING_ID}');
+        </script>
+    """, unsafe_allow_html=True)
+
     st.title('Metrics on my and clubs activities')
     st.write_stream(powered_by_strava_stream)
     st.logo(image='media/api_logo_pwrdBy_strava_horiz_gray.png',link='https://strava.com', icon_image='media/api_logo_pwrdBy_strava_stack_gray.png')
